@@ -2,13 +2,15 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Review
 from .serializers import ReviewSerializer
+from .filters import ReviewFilter
 from apps.users.permissions import IsAdmin
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.filter(is_active=True).select_related('user', 'product')
     serializer_class = ReviewSerializer
-    filterset_fields = ['product', 'rating']
+    filterset_class = ReviewFilter
+    search_fields = ['title', 'comment', 'user__full_name', 'product__name']
     ordering_fields = ['rating', 'created_at']
 
     def get_permissions(self):
