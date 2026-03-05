@@ -39,8 +39,11 @@ class VendorStoreViewSet(viewsets.ModelViewSet):
         return [IsVendor()]
 
     def get_queryset(self):
-        if self.request.user.is_authenticated and self.request.user.role == 'admin':
+        user = self.request.user
+        if user.is_authenticated and user.role == 'admin':
             return VendorStore.objects.all()
+        if user.is_authenticated and user.role == 'vendor' and self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return VendorStore.objects.filter(user=user)
         return super().get_queryset()
 
     def perform_create(self, serializer):

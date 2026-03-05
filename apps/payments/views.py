@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
+from django.db import IntegrityError
 from .models import Payment
 from .serializers import PaymentSerializer, InitiatePaymentSerializer, VerifyPaymentSerializer
 from apps.orders.models import Order
@@ -65,7 +66,10 @@ class VerifyPaymentView(APIView):
         payment.transaction_id = serializer.validated_data['transaction_id']
         payment.gateway_response = serializer.validated_data.get('gateway_response', {})
         payment.status = Payment.SUCCESS
-        payment.save()
+        try:
+            payment.save()
+        except IntegrityError:
+            return Response({'detail': 'Transaction ID already used.'}, status=status.HTTP_400_BAD_REQUEST)
 
         payment.order.status = Order.CONFIRMED
         payment.order.save()
@@ -108,6 +112,8 @@ class PaymentWebhookView(APIView):
 
     def post(self, request):
         if not settings.PAYMENT_WEBHOOK_SECRET:
+            if settings.DEBUG:
+                return Response({'detail': 'Webhook secret not configured. Skipping signature validation in DEBUG.'}, status=status.HTTP_200_OK)
             return Response({'detail': 'Webhook secret not configured.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         signature = request.headers.get('X-Signature', '')

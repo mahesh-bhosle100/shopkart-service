@@ -28,7 +28,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     ordering_fields = ['rating', 'created_at']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'stats']:
             return [AllowAny()]
         if self.action in ['update', 'partial_update']:
             return [IsReviewOwnerOrAdmin()]
@@ -143,7 +143,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def report(self, request, pk=None):
         review = self.get_object()
-        serializer = ReviewReportSerializer(data=request.data)
+        # Ensure serializer has request context and review id for validation
+        data = request.data.copy()
+        if 'review' not in data:
+            data['review'] = review.id
+        serializer = ReviewReportSerializer(data=data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save(review=review, reporter=request.user)
         return Response({'detail': 'Report submitted.'}, status=status.HTTP_201_CREATED)
@@ -163,14 +167,24 @@ class ReviewReportViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'], permission_classes=[IsAdmin])
     def approve(self, request, pk=None):
-        review = self.get_object()
+        report = self.get_object()
+        review = report.review
         review.is_active = True
         review.save(update_fields=['is_active'])
+        report.status = ReviewReport.RESOLVED
+        report.resolved_by = request.user
+        report.resolved_at = timezone.now()
+        report.save(update_fields=['status', 'resolved_by', 'resolved_at'])
         return Response({'detail': 'Review approved.'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'], permission_classes=[IsAdmin])
     def deactivate(self, request, pk=None):
-        review = self.get_object()
+        report = self.get_object()
+        review = report.review
         review.is_active = False
         review.save(update_fields=['is_active'])
+        report.status = ReviewReport.REJECTED
+        report.resolved_by = request.user
+        report.resolved_at = timezone.now()
+        report.save(update_fields=['status', 'resolved_by', 'resolved_at'])
         return Response({'detail': 'Review deactivated.'}, status=status.HTTP_200_OK)
