@@ -1,8 +1,25 @@
-# ShopKart Backend
+﻿# ShopKart Backend
 
-Beginner‑friendly backend for a multi‑vendor e‑commerce project using Django REST Framework.
+Beginner-friendly backend for a multi-vendor e-commerce project using Django REST Framework.
 
-## Quick Start (Docker – Recommended)
+## Key Features
+- Multi-vendor catalog with vendor stores, approvals, and dashboard APIs
+- JWT auth with roles (customer/vendor/admin), profile, email verification, and password reset
+- Orders with cart, checkout, returns, and status history
+- Payments (initiate/verify/webhook) with simulated gateways
+- Reviews with ratings, vendor replies, reports, and stats/export
+- Redis-backed caching plus API throttling, search, filters, ordering, pagination
+- Background jobs via Celery (email tasks)
+- API docs with Swagger/Redoc
+
+## Tech Stack
+- Django, Django REST Framework
+- MySQL, Redis
+- Celery
+- Docker Compose
+- drf-yasg, SimpleJWT
+
+## Quick Start (Docker - Recommended)
 1. Copy env file
 ```bash
 cp .env.example .env
@@ -22,6 +39,7 @@ docker compose exec web python manage.py createsuperuser
 - App: http://localhost:8000
 - Admin: http://localhost:8000/admin/
 - Swagger: http://localhost:8000/swagger/
+- Redoc: http://localhost:8000/redoc/
 - Health: http://localhost:8000/health/
 
 ## Local Setup (Without Docker)
@@ -100,7 +118,7 @@ docker compose exec -T web pytest -q
 - GET `/api/v1/reviews/reports/` (admin)
 
 ## Background Jobs (Celery)
-Celery runs automatically in Docker.  
+Celery runs automatically in Docker.
 Locally:
 ```bash
 celery -A config.celery app worker -l info
