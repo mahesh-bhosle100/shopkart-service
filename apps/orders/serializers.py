@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Cart, CartItem, Order, OrderItem, OrderStatusHistory
+from .models import Cart, CartItem, Order, OrderItem, OrderStatusHistory, ReturnRequest
 from apps.products.serializers import ProductListSerializer
 
 
@@ -66,3 +66,13 @@ class OrderSerializer(serializers.ModelSerializer):
 class PlaceOrderSerializer(serializers.Serializer):
     shipping_address_id = serializers.IntegerField()
     notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class ReturnRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReturnRequest
+        fields = [
+            'id', 'order', 'order_item', 'reason', 'status',
+            'resolved_by', 'resolved_at', 'created_at'
+        ]
+        read_only_fields = ['id', 'status', 'resolved_by', 'resolved_at', 'created_at']

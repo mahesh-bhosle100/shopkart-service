@@ -15,18 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_DATABASE: my_db
-          MYSQL_ROOT_PASSWORD: Pass@123
+      redis:
+        image: redis:7-alpine
         ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -uroot -pPass@123"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          - 6379:6379
 
     steps:
       - name: Checkout code
@@ -45,11 +37,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y default-libmysqlclient-dev gcc pkg-config
-
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -59,22 +46,12 @@ jobs:
         run: |
           echo "SECRET_KEY=test-secret-key-for-ci-pipeline" >> .env
           echo "DEBUG=True" >> .env
-          echo "DB_NAME=my_db" >> .env
-          echo "DB_USER=root" >> .env
-          echo "DB_PASSWORD=Pass@123" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
           echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
           echo "CORS_ALLOWED_ORIGINS=http://localhost:3000" >> .env
+          echo "REDIS_URL=redis://localhost:6379/1" >> .env
 
-      - name: Run database migrations
-        run: python manage.py migrate --settings=config.settings.dev
-
-      - name: Run tests with coverage
-        run: |
-          coverage run --source='.' manage.py test --settings=config.settings.dev --verbosity=2
-          coverage report
-          coverage xml
+      - name: Run tests
+        run: pytest -q
 
       - name: Lint with flake8
         run: |

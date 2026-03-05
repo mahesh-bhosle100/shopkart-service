@@ -37,6 +37,30 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
+
+  redis:
+    image: redis:7-alpine
+    container_name: shopkart_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  celery:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: shopkart_celery
+    restart: always
+    command: celery -A config.celery app worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - web
 
   nginx:
     image: nginx:alpine

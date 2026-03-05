@@ -33,6 +33,26 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
+
+  redis:
+    image: redis:7-alpine
+    container_name: shopkart_redis_prod
+    restart: always
+
+  celery:
+    image: ${DOCKER_USERNAME}/shopkart:latest
+    container_name: shopkart_celery_prod
+    restart: always
+    command: celery -A config.celery app worker -l info
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+    depends_on:
+      - redis
+      - web
 
   nginx:
     image: nginx:alpine

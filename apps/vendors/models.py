@@ -30,6 +30,7 @@ class VendorStore(models.Model):
         db_table = 'vendor_stores'
         verbose_name = 'Vendor Store'
         verbose_name_plural = 'Vendor Stores'
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.store_name

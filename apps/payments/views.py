@@ -1,15 +1,22 @@
+import hmac
+import hashlib
+import json
+
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.conf import settings
 from .models import Payment
 from .serializers import PaymentSerializer, InitiatePaymentSerializer, VerifyPaymentSerializer
 from apps.orders.models import Order
 from apps.users.permissions import IsAdmin
+from apps.common.email import send_email
 
 
 class InitiatePaymentView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = 'payments_write'
 
     def post(self, request):
         serializer = InitiatePaymentSerializer(data=request.data)
@@ -44,6 +51,7 @@ class InitiatePaymentView(APIView):
 
 class VerifyPaymentView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = 'payments_write'
 
     def post(self, request):
         serializer = VerifyPaymentSerializer(data=request.data)
@@ -62,12 +70,19 @@ class VerifyPaymentView(APIView):
         payment.order.status = Order.CONFIRMED
         payment.order.save()
 
+        send_email(
+            subject='Payment confirmed',
+            message=f'Your payment for order {payment.order.order_number} is confirmed.',
+            recipients=[payment.user.email]
+        )
+
         return Response({'detail': 'Payment verified successfully.', 'order_number': payment.order.order_number})
 
 
 class PaymentListView(generics.ListAPIView):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
+    throttle_scope = 'payments_read'
 
     def get_queryset(self):
         user = self.request.user
@@ -79,8 +94,58 @@ class PaymentListView(generics.ListAPIView):
 class PaymentDetailView(generics.RetrieveAPIView):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
+    throttle_scope = 'payments_read'
 
     def get_queryset(self):
         if self.request.user.role == 'admin':
             return Payment.objects.all()
         return Payment.objects.filter(user=self.request.user)
+
+
+class PaymentWebhookView(APIView):
+    permission_classes = [AllowAny]
+    throttle_scope = 'payments_write'
+
+    def post(self, request):
+        if not settings.PAYMENT_WEBHOOK_SECRET:
+            return Response({'detail': 'Webhook secret not configured.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        signature = request.headers.get('X-Signature', '')
+        expected = hmac.new(
+            settings.PAYMENT_WEBHOOK_SECRET.encode(),
+            msg=request.body,
+            digestmod=hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(signature, expected):
+            return Response({'detail': 'Invalid signature.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return Response({'detail': 'Invalid JSON.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        payment_id = payload.get('payment_id')
+        status_value = payload.get('status')
+        transaction_id = payload.get('transaction_id')
+
+        if payment_id and status_value:
+            try:
+                payment = Payment.objects.get(id=payment_id)
+                payment.status = status_value
+                if transaction_id:
+                    payment.transaction_id = transaction_id
+                payment.gateway_response = payload
+                payment.save()
+                if status_value == Payment.SUCCESS:
+                    payment.order.status = Order.CONFIRMED
+                    payment.order.save()
+                    send_email(
+                        subject='Payment confirmed',
+                        message=f'Your payment for order {payment.order.order_number} is confirmed.',
+                        recipients=[payment.user.email]
+                    )
+            except Payment.DoesNotExist:
+                return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({'detail': 'Webhook received.'}, status=status.HTTP_200_OK)

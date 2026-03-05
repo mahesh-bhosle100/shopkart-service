@@ -24,3 +24,8 @@ class IsVendorOrAdmin(BasePermission):
 class IsOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user.is_authenticated and (obj == request.user or request.user.role == 'admin')
+
+
+class IsReviewOwnerOrAdmin(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_authenticated and (obj.user == request.user or request.user.role == 'admin')

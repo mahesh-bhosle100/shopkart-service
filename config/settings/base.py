@@ -42,6 +42,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'apps.common.middleware.RequestIdMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -100,6 +101,26 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+REDIS_URL = config('REDIS_URL', default='redis://redis:6379/1')
+CACHE_TTL_SECONDS = config('CACHE_TTL_SECONDS', default=60, cast=int)
+MAX_UPLOAD_IMAGE_SIZE_MB = config('MAX_UPLOAD_IMAGE_SIZE_MB', default=5, cast=int)
+ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+PAYMENT_WEBHOOK_SECRET = config('PAYMENT_WEBHOOK_SECRET', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@shopkart.com')
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=REDIS_URL)
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=REDIS_URL)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+EMAIL_VERIFICATION_TTL_HOURS = config('EMAIL_VERIFICATION_TTL_HOURS', default=24, cast=int)
+PASSWORD_RESET_TTL_HOURS = config('PASSWORD_RESET_TTL_HOURS', default=2, cast=int)
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
@@ -120,13 +141,35 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': (
         'rest_framework.throttling.AnonRateThrottle',
         'apps.common.throttles.RoleBasedUserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
     ),
     'DEFAULT_THROTTLE_RATES': {
         'anon': '30/min',
         'user': '120/min',
         'vendor': '240/min',
         'admin': '600/min',
+        'reviews_read': '120/min',
+        'reviews_write': '60/min',
+        'reviews_export': '30/min',
+        'auth_login': '20/min',
+        'auth_register': '10/min',
+        'orders_read': '60/min',
+        'orders_write': '30/min',
+        'payments_read': '60/min',
+        'payments_write': '30/min',
+        'vendors_dashboard': '60/min',
     },
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'TIMEOUT': CACHE_TTL_SECONDS,
+    }
 }
 
 SIMPLE_JWT = {

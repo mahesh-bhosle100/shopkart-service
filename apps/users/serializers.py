@@ -53,3 +53,16 @@ class AddressSerializer(serializers.ModelSerializer):
         if validated_data.get('is_default'):
             Address.objects.filter(user=user).update(is_default=False)
         return Address.objects.create(user=user, **validated_data)
+
+
+class EmailVerificationConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(required=True, validators=[validate_password])
