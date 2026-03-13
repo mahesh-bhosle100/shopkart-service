@@ -11,7 +11,6 @@ from django.db import IntegrityError
 from .models import Payment
 from .serializers import PaymentSerializer, InitiatePaymentSerializer, VerifyPaymentSerializer
 from apps.orders.models import Order
-from apps.users.permissions import IsAdmin
 from apps.common.email import send_email
 
 
@@ -113,7 +112,10 @@ class PaymentWebhookView(APIView):
     def post(self, request):
         if not settings.PAYMENT_WEBHOOK_SECRET:
             if settings.DEBUG:
-                return Response({'detail': 'Webhook secret not configured. Skipping signature validation in DEBUG.'}, status=status.HTTP_200_OK)
+                return Response(
+                    {'detail': 'Webhook secret not configured. Skipping signature validation in DEBUG.'},
+                    status=status.HTTP_200_OK
+                )
             return Response({'detail': 'Webhook secret not configured.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         signature = request.headers.get('X-Signature', '')

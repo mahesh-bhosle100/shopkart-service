@@ -1,9 +1,7 @@
-from django.test import TestCase
 from rest_framework.test import APITestCase
 from rest_framework import status
-from django.urls import reverse
 from apps.users.models import User
-from apps.products.models import Category, Product
+from apps.products.models import Category
 
 
 class CategoryTest(APITestCase):

@@ -9,11 +9,10 @@ from .serializers import (
     CartSerializer, CartItemSerializer, OrderSerializer, PlaceOrderSerializer, ReturnRequestSerializer
 )
 from apps.users.models import Address
-from apps.users.permissions import IsAdmin, IsVendorOrAdmin, IsCustomer
+from apps.users.permissions import IsVendorOrAdmin, IsCustomer
 from apps.products.models import Product
 from apps.common.email import send_email
 from django.utils import timezone
-from .models import ReturnRequest
 
 
 def generate_order_number():

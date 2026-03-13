@@ -1,5 +1,5 @@
-from rest_framework import viewsets, status, generics
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import viewsets, status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.conf import settings
@@ -8,7 +8,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.utils.text import slugify
 from .models import Category, Product, ProductImage
-from .serializers import CategorySerializer, ProductListSerializer, ProductDetailSerializer, ProductImageSerializer
+from .serializers import CategorySerializer, ProductListSerializer, ProductDetailSerializer
 from apps.users.permissions import IsVendorOrAdmin, IsAdmin
 
 

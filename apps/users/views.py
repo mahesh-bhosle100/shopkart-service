@@ -14,7 +14,7 @@ from .serializers import (
     RegisterSerializer, UserSerializer, ChangePasswordSerializer, AddressSerializer,
     EmailVerificationConfirmSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 )
-from .permissions import IsOwnerOrAdmin, IsAdmin
+from .permissions import IsAdmin
 from apps.common.email import send_email
 
 

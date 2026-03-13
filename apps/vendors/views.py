@@ -1,6 +1,6 @@
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.conf import settings
 from django.utils.decorators import method_decorator
@@ -42,7 +42,11 @@ class VendorStoreViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_authenticated and user.role == 'admin':
             return VendorStore.objects.all()
-        if user.is_authenticated and user.role == 'vendor' and self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+        if (
+            user.is_authenticated
+            and user.role == 'vendor'
+            and self.action in ['retrieve', 'update', 'partial_update', 'destroy']
+        ):
             return VendorStore.objects.filter(user=user)
         return super().get_queryset()
 
@@ -64,8 +68,6 @@ class VendorStoreViewSet(viewsets.ModelViewSet):
     def dashboard(self, request):
         vendor = request.user
         products = Product.objects.filter(vendor=vendor, is_active=True)
-        product_ids = products.values_list('id', flat=True)
-
         orders = Order.objects.filter(items__product__vendor=vendor).distinct()
         revenue = OrderItem.objects.filter(product__vendor=vendor).aggregate(total=Sum('subtotal'))['total'] or 0
 
