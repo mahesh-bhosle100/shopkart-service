@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db import transaction
-from .models import Cart, CartItem, Order, OrderItem, OrderStatusHistory
+from .models import Cart, CartItem, Order, OrderItem, OrderStatusHistory, ReturnRequest
 from .serializers import (
     CartSerializer, CartItemSerializer, OrderSerializer, PlaceOrderSerializer, ReturnRequestSerializer
 )
