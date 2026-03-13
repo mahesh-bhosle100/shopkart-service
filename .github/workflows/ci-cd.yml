@@ -104,7 +104,8 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Skip build/push (missing secrets)
         if: steps.docker_check.outputs.can_push != 'true'
-        run: echo "Build/push skipped: missing DOCKER_USERNAME/DOCKER_PASSWORD secrets."
+        run: |
+          echo "Build/push skipped: missing DOCKER_USERNAME/DOCKER_PASSWORD secrets."
 
   deploy:
     name: Deploy to Server
@@ -144,4 +145,5 @@ jobs:
             echo "Deployed successfully!"
       - name: Skip deploy (missing secrets)
         if: steps.deploy_check.outputs.can_deploy != 'true'
-        run: echo "Deploy skipped: missing SERVER_HOST/SERVER_USER/SERVER_SSH_KEY secrets."
+        run: |
+          echo "Deploy skipped: missing SERVER_HOST/SERVER_USER/SERVER_SSH_KEY secrets."
